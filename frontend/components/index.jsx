@@ -1,5 +1,6 @@
 var React = require('react');
 var BenchStore = require('../stores/bench');
+var UiActions = require('../actions/ui-actions');
 
 var Index = React.createClass({
 	getInitialState: function () {
@@ -22,9 +23,29 @@ var Index = React.createClass({
 		});
 	},
 
+	_onMouseEnter: function (id) {
+		return function (e) {
+			UiActions.setIndexFocus(id);
+		};
+	},
+
+	_onMouseLeave: function (id) {
+		return function (e) {
+			UiActions.setIndexFocus(null);
+		};
+	},
+
 	render: function () {
+		var that = this;
 		var benches = this.state.benches.map(function (bench) {
-			return <div key={bench.id}>{bench.description}</div>;
+			return (
+				<div key={bench.id}
+					onMouseEnter={that._onMouseEnter(bench.id).bind(that)}
+					onMouseLeave={that._onMouseLeave(bench.id).bind(that)}
+				>
+					{bench.description}
+				</div>
+			);
 		});
 		return (
 			<div>

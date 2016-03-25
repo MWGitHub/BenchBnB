@@ -31569,6 +31569,7 @@
 
 	var React = __webpack_require__(1);
 	var BenchStore = __webpack_require__(216);
+	var UiActions = __webpack_require__(246);
 	
 	var Index = React.createClass({
 		displayName: 'Index',
@@ -31593,11 +31594,27 @@
 			});
 		},
 	
+		_onMouseEnter: function (id) {
+			return function (e) {
+				UiActions.setIndexFocus(id);
+			};
+		},
+	
+		_onMouseLeave: function (id) {
+			return function (e) {
+				UiActions.setIndexFocus(null);
+			};
+		},
+	
 		render: function () {
+			var that = this;
 			var benches = this.state.benches.map(function (bench) {
 				return React.createElement(
 					'div',
-					{ key: bench.id },
+					{ key: bench.id,
+						onMouseEnter: that._onMouseEnter(bench.id).bind(that),
+						onMouseLeave: that._onMouseLeave(bench.id).bind(that)
+					},
 					bench.description
 				);
 			});
@@ -31618,13 +31635,15 @@
 	var React = __webpack_require__(1);
 	var BenchStore = __webpack_require__(216);
 	var ApiUtil = __webpack_require__(240);
+	var UiStore = __webpack_require__(244);
 	
 	var Map = React.createClass({
 		displayName: 'Map',
 	
 		getInitialState: function () {
 			return {
-				benches: BenchStore.all()
+				benches: BenchStore.all(),
+				focusedMarkerIndex: null
 			};
 		},
 	
@@ -31634,6 +31653,7 @@
 	
 		componentDidMount: function () {
 			this.benchChangeToken = BenchStore.addListener(this._onBenchChange);
+			this.uiChangeToken = UiStore.addListener(this._onUiChange);
 	
 			var mapDOMNode = this.refs.map;
 			var mapOptions = {
@@ -31646,11 +31666,18 @@
 	
 		componentWillUnmount: function () {
 			this.benchChangeToken.remove();
+			this.uiChangeToken.remove();
 		},
 	
 		_onBenchChange: function () {
 			this.setState({
 				benches: BenchStore.all()
+			});
+		},
+	
+		_onUiChange: function () {
+			this.setState({
+				focusedMarkerIndex: UiStore.getFocusedIndex()
 			});
 		},
 	
@@ -31699,6 +31726,15 @@
 		render: function () {
 			this._updateMarkers();
 	
+			for (var id in this.markers) {
+				var marker = this.markers[id];
+				if (parseInt(id) !== this.state.focusedMarkerIndex) {
+					marker.setAnimation(null);
+				} else if (!marker.getAnimation()) {
+					marker.setAnimation(google.maps.Animation.BOUNCE);
+				}
+			}
+	
 			return React.createElement('div', { className: 'map', ref: 'map' });
 		}
 	});
@@ -31727,6 +31763,61 @@
 	});
 	
 	module.exports = Search;
+
+/***/ },
+/* 244 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Store = __webpack_require__(217).Store;
+	var Dispatcher = __webpack_require__(235);
+	var UiConstants = __webpack_require__(245);
+	
+	var _focusedIndex = null;
+	
+	var UiStore = new Store(Dispatcher);
+	
+	UiStore.getFocusedIndex = function () {
+		return _focusedIndex;
+	};
+	
+	UiStore.__onDispatch = function (payload) {
+		switch (payload.actionType) {
+			case UiConstants.SET_INDEX_FOCUS:
+				_focusedIndex = payload.index;
+				this.__emitChange();
+				break;
+		}
+	};
+	
+	module.exports = UiStore;
+
+/***/ },
+/* 245 */
+/***/ function(module, exports) {
+
+	var UiConstants = {
+		SET_INDEX_FOCUS: 'SET_INDEX_FOCUS'
+	};
+	
+	module.exports = UiConstants;
+
+/***/ },
+/* 246 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Dispatcher = __webpack_require__(235);
+	var UiConstants = __webpack_require__(245);
+	
+	var UiActions = {
+		setIndexFocus: function (index) {
+			Dispatcher.dispatch({
+				actionType: UiConstants.SET_INDEX_FOCUS,
+				index: index
+			});
+		}
+	};
+	
+	module.exports = UiActions;
 
 /***/ }
 /******/ ]);

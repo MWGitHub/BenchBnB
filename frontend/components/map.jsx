@@ -1,11 +1,13 @@
 var React = require('react');
 var BenchStore = require('../stores/bench');
 var ApiUtil = require('../util/api-util');
+var UiStore = require('../stores/ui');
 
 var Map = React.createClass({
 	getInitialState: function () {
 		return {
-			benches: BenchStore.all()
+			benches: BenchStore.all(),
+			focusedMarkerIndex: null
 		};
 	},
 
@@ -15,6 +17,7 @@ var Map = React.createClass({
 
 	componentDidMount: function () {
 		this.benchChangeToken = BenchStore.addListener(this._onBenchChange);
+		this.uiChangeToken = UiStore.addListener(this._onUiChange);
 
 		var mapDOMNode = this.refs.map;
 		var mapOptions = {
@@ -27,11 +30,18 @@ var Map = React.createClass({
 
 	componentWillUnmount: function () {
 		this.benchChangeToken.remove();
+		this.uiChangeToken.remove();
 	},
 
 	_onBenchChange: function () {
 		this.setState({
 			benches: BenchStore.all()
+		});
+	},
+
+	_onUiChange: function () {
+		this.setState({
+			focusedMarkerIndex: UiStore.getFocusedIndex()
 		});
 	},
 
@@ -79,6 +89,15 @@ var Map = React.createClass({
 
 	render: function () {
 		this._updateMarkers();
+
+		for (var id in this.markers) {
+			var marker = this.markers[id];
+			if (parseInt(id) !== this.state.focusedMarkerIndex) {
+				marker.setAnimation(null);
+			} else if (!marker.getAnimation()) {
+				marker.setAnimation(google.maps.Animation.BOUNCE);
+			}
+		}
 
 		return (
 			<div className="map" ref="map">
