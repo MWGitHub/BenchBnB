@@ -50,8 +50,41 @@
 	var Route = __webpack_require__(159).Route;
 	var Search = __webpack_require__(243);
 	
+	var App = React.createClass({
+		displayName: 'App',
+	
+		render: function () {
+			return React.createElement(
+				'div',
+				null,
+				React.createElement(
+					'nav',
+					{ className: 'nav group' },
+					React.createElement(
+						'div',
+						{ className: 'logo' },
+						React.createElement(
+							'h2',
+							null,
+							React.createElement(
+								'a',
+								{ href: '#' },
+								'BenchBnB'
+							)
+						)
+					)
+				),
+				React.createElement(
+					'div',
+					{ className: 'main' },
+					React.createElement(Search, null)
+				)
+			);
+		}
+	});
+	
 	$(function () {
-		ReactDOM.render(React.createElement(Search, null), $('#content')[0]);
+		ReactDOM.render(React.createElement(App, null), $('#content')[0]);
 	});
 
 /***/ },
