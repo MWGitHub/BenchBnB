@@ -31546,11 +31546,14 @@
 	var ApiActions = __webpack_require__(238);
 	
 	var ApiUtil = {
-		fetchBenches: function () {
+		fetchBenches: function (bounds) {
 			$.ajax({
 				type: 'GET',
 				url: '/api/benches',
 				dataType: 'json',
+				data: {
+					bounds: bounds
+				},
 				success: function (data) {
 					ApiActions.receiveAll(data);
 				}
@@ -31625,6 +31628,10 @@
 			};
 		},
 	
+		componentWillMount: function () {
+			this.markers = {};
+		},
+	
 		componentDidMount: function () {
 			this.benchChangeToken = BenchStore.addListener(this._onBenchChange);
 	
@@ -31634,9 +31641,7 @@
 				zoom: 13
 			};
 			this.map = new google.maps.Map(mapDOMNode, mapOptions);
-			this.map.addListener('idle', function () {
-				ApiUtil.fetchBenches();
-			});
+			this.map.addListener('idle', this._onIdle);
 		},
 	
 		componentWillUnmount: function () {
@@ -31649,18 +31654,50 @@
 			});
 		},
 	
-		_onIdle: function () {},
+		_onIdle: function () {
+			var bounds = this.map.getBounds();
+			var northEast = bounds.getNorthEast();
+			var southWest = bounds.getSouthWest();
+			ApiUtil.fetchBenches({
+				northEast: { lat: northEast.lat, lng: northEast.lng },
+				southWest: { lat: southWest.lat, lng: southWest.lng }
+			});
+		},
+	
+		_updateMarkers: function () {
+			var bench, id, marker;
+			var newBenches = {};
+			var newMarkers = {};
+			for (var i = 0; i < this.state.benches.length; ++i) {
+				bench = this.state.benches[i];
+				newBenches[bench.id] = bench;
+			}
+			// Create markers for ones that do not already exist
+			for (id in newBenches) {
+				if (!this.markers[id]) {
+					bench = newBenches[id];
+					var latLng = new google.maps.LatLng(bench.lat, bench.lng);
+					marker = new google.maps.Marker({
+						position: latLng,
+						title: bench.description
+					});
+					marker.setMap(this.map);
+					newMarkers[id] = marker;
+				}
+			}
+			// Remove markers that are no longer shown
+			for (id in this.markers) {
+				marker = this.markers[id];
+				if (!newBenches[id]) {
+					marker.setMap(null);
+					delete this.markers[id];
+				}
+			}
+			Object.assign(this.markers, newMarkers);
+		},
 	
 		render: function () {
-			for (var i = 0; i < this.state.benches.length; ++i) {
-				var bench = this.state.benches[i];
-				var latLng = new google.maps.LatLng(bench.lat, bench.lng);
-				var marker = new google.maps.Marker({
-					position: latLng,
-					title: bench.description
-				});
-				marker.setMap(this.map);
-			}
+			this._updateMarkers();
 	
 			return React.createElement('div', { className: 'map', ref: 'map' });
 		}
