@@ -4,6 +4,7 @@ var Map = require('./map');
 var FilterStore = require('../stores/filter');
 var FilterActions = require('../actions/filter-actions');
 var ApiUtil = require('../util/api-util');
+var FilterSeat = require('./filter-seat');
 
 var Search = React.createClass({
 	contextTypes: {
@@ -50,8 +51,13 @@ var Search = React.createClass({
 	render: function () {
 		return (
 			<div>
-				<Map onIdle={this._handleMapIdle} onClick={this._handleMapClick} />
-				<Index />
+				<div className="left">
+					<FilterSeat />
+					<Index />
+				</div>
+				<div className="right">
+					<Map onIdle={this._handleMapIdle} onClick={this._handleMapClick} />
+				</div>
 			</div>
 		);
 	}

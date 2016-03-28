@@ -24777,6 +24777,7 @@
 	var FilterStore = __webpack_require__(248);
 	var FilterActions = __webpack_require__(250);
 	var ApiUtil = __webpack_require__(244);
+	var FilterSeat = __webpack_require__(251);
 	
 	var Search = React.createClass({
 		displayName: 'Search',
@@ -24826,8 +24827,17 @@
 			return React.createElement(
 				'div',
 				null,
-				React.createElement(Map, { onIdle: this._handleMapIdle, onClick: this._handleMapClick }),
-				React.createElement(Index, null)
+				React.createElement(
+					'div',
+					{ className: 'left' },
+					React.createElement(FilterSeat, null),
+					React.createElement(Index, null)
+				),
+				React.createElement(
+					'div',
+					{ className: 'right' },
+					React.createElement(Map, { onIdle: this._handleMapIdle, onClick: this._handleMapClick })
+				)
 			);
 		}
 	});
@@ -32160,6 +32170,94 @@
 	};
 	
 	module.exports = FilterActions;
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var FilterActions = __webpack_require__(250);
+	var FilterStore = __webpack_require__(248);
+	
+	var FilterSeat = React.createClass({
+		displayName: 'FilterSeat',
+	
+		getInitialState: function () {
+			var filters = FilterStore.filters();
+	
+			return {
+				minSeats: filters.minSeating,
+				maxSeats: filters.maxSeating
+			};
+		},
+	
+		componentDidMount: function () {
+			this.filterToken = FilterStore.addListener(this._onFilterChange);
+		},
+	
+		componentWillUnmount: function () {
+			this.filterToken.remove();
+		},
+	
+		_onFilterChange: function () {
+			var filters = FilterStore.filters();
+			this.setState({
+				minSeats: filters.minSeating,
+				maxSeats: filters.maxSeating
+			});
+		},
+	
+		_handleMinSeatChange: function (e) {
+			var val = parseInt(e.target.value);
+			this.setState({
+				minSeats: val
+			});
+	
+			FilterActions.receiveFilters({ minSeating: val });
+		},
+	
+		_handleMaxSeatChange: function (e) {
+			var val = parseInt(e.target.value);
+			this.setState({
+				maxSeats: val
+			});
+	
+			FilterActions.receiveFilters({ maxSeating: val });
+		},
+	
+		render: function () {
+			return React.createElement(
+				'div',
+				null,
+				React.createElement(
+					'div',
+					null,
+					React.createElement(
+						'label',
+						null,
+						'Min Seats:',
+						React.createElement('input', { type: 'text',
+							value: this.state.minSeats,
+							onChange: this._handleMinSeatChange })
+					)
+				),
+				React.createElement(
+					'div',
+					null,
+					React.createElement(
+						'label',
+						null,
+						'Max Seats:',
+						React.createElement('input', { type: 'text',
+							value: this.state.maxSeats,
+							onChange: this._handleMaxSeatChange })
+					)
+				)
+			);
+		}
+	});
+	
+	module.exports = FilterSeat;
 
 /***/ }
 /******/ ]);
