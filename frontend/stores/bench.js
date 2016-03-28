@@ -24,6 +24,13 @@ BenchStore.all = function () {
 	return _benches.slice();
 };
 
+BenchStore.find = function (id) {
+	for (var i = 0; i < _benches.length; ++i) {
+		if (_benches[i].id === id) return _benches[i];
+	}
+	return null;
+};
+
 BenchStore.__onDispatch = function (payload) {
 	switch (payload.actionType) {
 		case BenchConstants.BENCHES_RECEIVED:

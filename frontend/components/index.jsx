@@ -35,6 +35,12 @@ var Index = React.createClass({
 		};
 	},
 
+	_onClick: function (id) {
+		return function (e) {
+			this.props.onClick(id);
+		};
+	},
+
 	render: function () {
 		var that = this;
 		var benches = this.state.benches.map(function (bench) {
@@ -42,6 +48,7 @@ var Index = React.createClass({
 				<div key={bench.id}
 					onMouseEnter={that._onMouseEnter(bench.id).bind(that)}
 					onMouseLeave={that._onMouseLeave(bench.id).bind(that)}
+					onClick={that._onClick(bench.id).bind(that)}
 				>
 					{bench.description}
 				</div>

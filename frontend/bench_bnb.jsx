@@ -8,6 +8,7 @@ var Link = ReactRouter.Link;
 var Search = require('./components/search');
 var browserHistory = ReactRouter.browserHistory;
 var BenchForm = require('./components/bench-form');
+var BenchDetail = require('./components/bench-detail');
 
 var App = React.createClass({
 	render: function () {
@@ -29,6 +30,7 @@ var routes = (
 		<Route path='/' component={App}>
 			<IndexRoute component={Search} />
 			<Route path='benches/new' component={BenchForm} />
+			<Route path='benches/:id' component={BenchDetail} />
 		</Route>
 	</Router>
 );

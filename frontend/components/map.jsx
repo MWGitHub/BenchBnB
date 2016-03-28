@@ -1,11 +1,9 @@
 var React = require('react');
-var BenchStore = require('../stores/bench');
 var UiStore = require('../stores/ui');
 
 var Map = React.createClass({
 	getInitialState: function () {
 		return {
-			benches: BenchStore.all(),
 			focusedMarkerIndex: null
 		};
 	},
@@ -15,27 +13,18 @@ var Map = React.createClass({
 	},
 
 	componentDidMount: function () {
-		this.benchChangeToken = BenchStore.addListener(this._handleBenchChange);
 		this.uiChangeToken = UiStore.addListener(this._handleUiChange);
 
 		this._createMap();
 
 		this.setState({
-			benches: BenchStore.all(),
 			focusedMarkerIndex: UiStore.getFocusedIndex()
 		});
 
 	},
 
 	componentWillUnmount: function () {
-		this.benchChangeToken.remove();
 		this.uiChangeToken.remove();
-	},
-
-	_handleBenchChange: function () {
-		this.setState({
-			benches: BenchStore.all()
-		});
 	},
 
 	_handleUiChange: function () {
@@ -52,15 +41,27 @@ var Map = React.createClass({
 			northEast.lng() === southWest.lng()) {
 			return;
 		}
-		this.props.onIdle({
-			northEast: { lat: northEast.lat(), lng: northEast.lng() },
-			southWest: { lat: southWest.lat(), lng: southWest.lng() }
-		});
+		if (this.props.onIdle) {
+			this.props.onIdle({
+				northEast: { lat: northEast.lat(), lng: northEast.lng() },
+				southWest: { lat: southWest.lat(), lng: southWest.lng() }
+			});
+		}
 	},
 
 	_handleClick: function (e) {
 		var latLng = e.latLng;
-		this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
+		if (this.props.onClick) {
+			this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
+		}
+	},
+
+	_handleMarkerClick: function (marker) {
+		return function (e) {
+			if (this.props.onMarkerClick) {
+				this.props.onMarkerClick(marker.benchId);
+			}
+		};
 	},
 
 	_createMap: function () {
@@ -71,6 +72,7 @@ var Map = React.createClass({
 			center: {lat: 40.725184, lng: -73.997226},
 			zoom: 13
 		};
+		Object.assign(mapOptions, this.props.mapOptions || {});
 		this.map = new google.maps.Map(mapDOMNode, mapOptions);
 		this.map.addListener('idle', this._handleIdle);
 		this.map.addListener('click', this._handleClick);
@@ -83,8 +85,8 @@ var Map = React.createClass({
 		var newBenches = {};
 
 
-		for (var i = 0; i < this.state.benches.length; ++i) {
-			bench = this.state.benches[i];
+		for (var i = 0; i < this.props.benches.length; ++i) {
+			bench = this.props.benches[i];
 			newBenches[bench.id] = bench;
 		}
 
@@ -102,11 +104,15 @@ var Map = React.createClass({
 			if (!this.markers[id]) {
 				bench = newBenches[id];
 				var latLng = new google.maps.LatLng(bench.lat, bench.lng);
-				marker = new google.maps.Marker({
+				var markerOptions = {
 					position: latLng,
 					title: bench.description
-				});
+				};
+				Object.assign(markerOptions, this.props.markerOptions || {});
+				marker = new google.maps.Marker(markerOptions);
 				marker.setMap(this.map);
+				marker.benchId = id;
+				marker.addListener('click', this._handleMarkerClick(marker).bind(this));
 				this.markers[id] = marker;
 			}
 		}

@@ -54,6 +54,7 @@
 	var Search = __webpack_require__(216);
 	var browserHistory = ReactRouter.browserHistory;
 	var BenchForm = __webpack_require__(247);
+	var BenchDetail = __webpack_require__(252);
 	
 	var App = React.createClass({
 		displayName: 'App',
@@ -95,7 +96,8 @@
 			Route,
 			{ path: '/', component: App },
 			React.createElement(IndexRoute, { component: Search }),
-			React.createElement(Route, { path: 'benches/new', component: BenchForm })
+			React.createElement(Route, { path: 'benches/new', component: BenchForm }),
+			React.createElement(Route, { path: 'benches/:id', component: BenchDetail })
 		)
 	);
 	
@@ -24778,6 +24780,7 @@
 	var FilterActions = __webpack_require__(250);
 	var ApiUtil = __webpack_require__(244);
 	var FilterSeat = __webpack_require__(251);
+	var BenchStore = __webpack_require__(218);
 	
 	var Search = React.createClass({
 		displayName: 'Search',
@@ -24790,16 +24793,19 @@
 	
 		getInitialState: function () {
 			return {
-				filters: FilterStore.filters()
+				filters: FilterStore.filters(),
+				benches: BenchStore.all()
 			};
 		},
 	
 		componentDidMount: function () {
 			this.filterToken = FilterStore.addListener(this._handleFilterChange);
+			this.benchToken = BenchStore.addListener(this._handleBenchChange);
 		},
 	
 		componentWillUnmount: function () {
 			this.filterToken.remove();
+			this.benchToken.remove();
 		},
 	
 		_handleFilterChange: function () {
@@ -24808,6 +24814,12 @@
 			});
 	
 			ApiUtil.fetchBenches();
+		},
+	
+		_handleBenchChange: function () {
+			this.setState({
+				benches: BenchStore.all()
+			});
 		},
 	
 		_handleMapIdle: function (bounds) {
@@ -24823,6 +24835,12 @@
 			});
 		},
 	
+		_handleBenchClick: function (id) {
+			this.context.router.push({
+				pathname: 'benches/' + id
+			});
+		},
+	
 		render: function () {
 			return React.createElement(
 				'div',
@@ -24831,12 +24849,17 @@
 					'div',
 					{ className: 'left' },
 					React.createElement(FilterSeat, null),
-					React.createElement(Index, null)
+					React.createElement(Index, { onClick: this._handleBenchClick })
 				),
 				React.createElement(
 					'div',
 					{ className: 'right' },
-					React.createElement(Map, { onIdle: this._handleMapIdle, onClick: this._handleMapClick })
+					React.createElement(Map, {
+						benches: this.state.benches,
+						onIdle: this._handleMapIdle,
+						onClick: this._handleMapClick,
+						onMarkerClick: this._handleBenchClick
+					})
 				)
 			);
 		}
@@ -24887,6 +24910,12 @@
 			};
 		},
 	
+		_onClick: function (id) {
+			return function (e) {
+				this.props.onClick(id);
+			};
+		},
+	
 		render: function () {
 			var that = this;
 			var benches = this.state.benches.map(function (bench) {
@@ -24894,7 +24923,8 @@
 					'div',
 					{ key: bench.id,
 						onMouseEnter: that._onMouseEnter(bench.id).bind(that),
-						onMouseLeave: that._onMouseLeave(bench.id).bind(that)
+						onMouseLeave: that._onMouseLeave(bench.id).bind(that),
+						onClick: that._onClick(bench.id).bind(that)
 					},
 					bench.description
 				);
@@ -24936,6 +24966,13 @@
 	
 	BenchStore.all = function () {
 		return _benches.slice();
+	};
+	
+	BenchStore.find = function (id) {
+		for (var i = 0; i < _benches.length; ++i) {
+			if (_benches[i].id === id) return _benches[i];
+		}
+		return null;
 	};
 	
 	BenchStore.__onDispatch = function (payload) {
@@ -31759,7 +31796,6 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
-	var BenchStore = __webpack_require__(218);
 	var UiStore = __webpack_require__(246);
 	
 	var Map = React.createClass({
@@ -31767,7 +31803,6 @@
 	
 		getInitialState: function () {
 			return {
-				benches: BenchStore.all(),
 				focusedMarkerIndex: null
 			};
 		},
@@ -31777,26 +31812,17 @@
 		},
 	
 		componentDidMount: function () {
-			this.benchChangeToken = BenchStore.addListener(this._handleBenchChange);
 			this.uiChangeToken = UiStore.addListener(this._handleUiChange);
 	
 			this._createMap();
 	
 			this.setState({
-				benches: BenchStore.all(),
 				focusedMarkerIndex: UiStore.getFocusedIndex()
 			});
 		},
 	
 		componentWillUnmount: function () {
-			this.benchChangeToken.remove();
 			this.uiChangeToken.remove();
-		},
-	
-		_handleBenchChange: function () {
-			this.setState({
-				benches: BenchStore.all()
-			});
 		},
 	
 		_handleUiChange: function () {
@@ -31812,15 +31838,27 @@
 			if (northEast.lat() === southWest.lat() && northEast.lng() === southWest.lng()) {
 				return;
 			}
-			this.props.onIdle({
-				northEast: { lat: northEast.lat(), lng: northEast.lng() },
-				southWest: { lat: southWest.lat(), lng: southWest.lng() }
-			});
+			if (this.props.onIdle) {
+				this.props.onIdle({
+					northEast: { lat: northEast.lat(), lng: northEast.lng() },
+					southWest: { lat: southWest.lat(), lng: southWest.lng() }
+				});
+			}
 		},
 	
 		_handleClick: function (e) {
 			var latLng = e.latLng;
-			this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
+			if (this.props.onClick) {
+				this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
+			}
+		},
+	
+		_handleMarkerClick: function (marker) {
+			return function (e) {
+				if (this.props.onMarkerClick) {
+					this.props.onMarkerClick(marker.benchId);
+				}
+			};
 		},
 	
 		_createMap: function () {
@@ -31831,6 +31869,7 @@
 				center: { lat: 40.725184, lng: -73.997226 },
 				zoom: 13
 			};
+			Object.assign(mapOptions, this.props.mapOptions || {});
 			this.map = new google.maps.Map(mapDOMNode, mapOptions);
 			this.map.addListener('idle', this._handleIdle);
 			this.map.addListener('click', this._handleClick);
@@ -31842,8 +31881,8 @@
 			var bench, id, marker;
 			var newBenches = {};
 	
-			for (var i = 0; i < this.state.benches.length; ++i) {
-				bench = this.state.benches[i];
+			for (var i = 0; i < this.props.benches.length; ++i) {
+				bench = this.props.benches[i];
 				newBenches[bench.id] = bench;
 			}
 	
@@ -31861,11 +31900,15 @@
 				if (!this.markers[id]) {
 					bench = newBenches[id];
 					var latLng = new google.maps.LatLng(bench.lat, bench.lng);
-					marker = new google.maps.Marker({
+					var markerOptions = {
 						position: latLng,
 						title: bench.description
-					});
+					};
+					Object.assign(markerOptions, this.props.markerOptions || {});
+					marker = new google.maps.Marker(markerOptions);
 					marker.setMap(this.map);
+					marker.benchId = id;
+					marker.addListener('click', this._handleMarkerClick(marker).bind(this));
 					this.markers[id] = marker;
 				}
 			}
@@ -31910,6 +31953,17 @@
 				},
 				success: function (data) {
 					ApiActions.receiveAll(data);
+				}
+			});
+		},
+	
+		fetchBench: function (id) {
+			$.ajax({
+				type: 'GET',
+				url: '/api/benches/' + id,
+				dataType: 'json',
+				success: function (data) {
+					ApiActions.receiveBench(data);
 				}
 			});
 		},
@@ -32258,6 +32312,106 @@
 	});
 	
 	module.exports = FilterSeat;
+
+/***/ },
+/* 252 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var BenchStore = __webpack_require__(218);
+	var ApiUtil = __webpack_require__(244);
+	var Map = __webpack_require__(243);
+	
+	var BenchDetail = React.createClass({
+		displayName: 'BenchDetail',
+	
+		getInitialState: function () {
+			return {
+				bench: BenchStore.find(parseInt(this.props.params.id))
+			};
+		},
+	
+		componentDidMount: function () {
+			this.benchToken = BenchStore.addListener(this._onBenchChange);
+	
+			ApiUtil.fetchBench(this.props.params.id);
+		},
+	
+		componentWillUnmount: function () {
+			this.benchToken.remove();
+		},
+	
+		_onBenchChange: function () {
+			this.setState({
+				bench: BenchStore.find(parseInt(this.props.params.id))
+			});
+		},
+	
+		componentWillReceiveProps: function (newProps) {
+			this.setState({
+				bench: BenchStore.find(parseInt(newProps.params.id))
+			});
+		},
+	
+		render: function () {
+			if (!this.state.bench) {
+				return React.createElement('div', null);
+			}
+	
+			return React.createElement(
+				'div',
+				null,
+				React.createElement(
+					'div',
+					{ className: 'left' },
+					React.createElement(
+						'p',
+						null,
+						'Latitude: ',
+						this.state.bench.lat
+					),
+					React.createElement(
+						'p',
+						null,
+						'Longitude: ',
+						this.state.bench.lng
+					),
+					React.createElement(
+						'p',
+						null,
+						'Seating: ',
+						this.state.bench.seating
+					),
+					React.createElement(
+						'p',
+						null,
+						'Description: ',
+						this.state.bench.description
+					)
+				),
+				React.createElement(
+					'div',
+					{ className: 'right' },
+					React.createElement(Map, {
+						benches: [this.state.bench],
+						mapOptions: {
+							disableDefaultUI: true,
+							disableDoubleClickZoom: true,
+							draggable: false,
+							keyboardShortcuts: false,
+							scrollwheel: false
+						},
+						markerOptions: {
+							clickable: false,
+							cursor: "default"
+						}
+					})
+				)
+			);
+		}
+	});
+	
+	module.exports = BenchDetail;
 
 /***/ }
 /******/ ]);
