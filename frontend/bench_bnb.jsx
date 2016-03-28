@@ -4,6 +4,7 @@ var ReactRouter = require('react-router');
 var Router = ReactRouter.Router;
 var Route = ReactRouter.Route;
 var IndexRoute = ReactRouter.IndexRoute;
+var Link = ReactRouter.Link;
 var Search = require('./components/search');
 var browserHistory = ReactRouter.browserHistory;
 var BenchForm = require('./components/bench-form');
@@ -13,7 +14,7 @@ var App = React.createClass({
 		return (
 			<div>
 				<nav className="nav group">
-					<div className="logo"><h2><a href="/">BenchBnB</a></h2></div>
+					<div className="logo"><h2><Link to="/">BenchBnB</Link></h2></div>
 				</nav>
 				<div className="main">
 					{this.props.children}

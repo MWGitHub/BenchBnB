@@ -1,6 +1,5 @@
 var React = require('react');
 var BenchStore = require('../stores/bench');
-var ApiUtil = require('../util/api-util');
 var UiStore = require('../stores/ui');
 
 var Map = React.createClass({
@@ -16,17 +15,16 @@ var Map = React.createClass({
 	},
 
 	componentDidMount: function () {
-		this.benchChangeToken = BenchStore.addListener(this._onBenchChange);
-		this.uiChangeToken = UiStore.addListener(this._onUiChange);
+		this.benchChangeToken = BenchStore.addListener(this._handleBenchChange);
+		this.uiChangeToken = UiStore.addListener(this._handleUiChange);
 
-		var mapDOMNode = this.refs.map;
-		var mapOptions = {
-			center: {lat: 40.725184, lng: -73.997226},
-			zoom: 13
-		};
-		this.map = new google.maps.Map(mapDOMNode, mapOptions);
-		this.map.addListener('idle', this._onIdle);
-		this.map.addListener('click', this._onClick);
+		this._createMap();
+
+		this.setState({
+			benches: BenchStore.all(),
+			focusedMarkerIndex: UiStore.getFocusedIndex()
+		});
+
 	},
 
 	componentWillUnmount: function () {
@@ -34,41 +32,71 @@ var Map = React.createClass({
 		this.uiChangeToken.remove();
 	},
 
-	_onBenchChange: function () {
+	_handleBenchChange: function () {
 		this.setState({
 			benches: BenchStore.all()
 		});
 	},
 
-	_onUiChange: function () {
+	_handleUiChange: function () {
 		this.setState({
 			focusedMarkerIndex: UiStore.getFocusedIndex()
 		});
 	},
 
-	_onIdle: function () {
+	_handleIdle: function () {
 		var bounds = this.map.getBounds();
 		var northEast = bounds.getNorthEast();
 		var southWest = bounds.getSouthWest();
-		ApiUtil.fetchBenches({
-			northEast: { lat: northEast.lat, lng: northEast.lng },
-			southWest: { lat: southWest.lat, lng: southWest.lng }
+		if (northEast.lat() === southWest.lat() &&
+			northEast.lng() === southWest.lng()) {
+			return;
+		}
+		this.props.onIdle({
+			northEast: { lat: northEast.lat(), lng: northEast.lng() },
+			southWest: { lat: southWest.lat(), lng: southWest.lng() }
 		});
 	},
 
-	_onClick: function (e) {
+	_handleClick: function (e) {
 		var latLng = e.latLng;
 		this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
 	},
 
+	_createMap: function () {
+		if (this.map) return;
+
+		var mapDOMNode = this.refs.map;
+		var mapOptions = {
+			center: {lat: 40.725184, lng: -73.997226},
+			zoom: 13
+		};
+		this.map = new google.maps.Map(mapDOMNode, mapOptions);
+		this.map.addListener('idle', this._handleIdle);
+		this.map.addListener('click', this._handleClick);
+	},
+
 	_updateMarkers: function () {
+		if (!this.map) return;
+
 		var bench, id, marker;
 		var newBenches = {};
-		var newMarkers = {};
+
+
 		for (var i = 0; i < this.state.benches.length; ++i) {
 			bench = this.state.benches[i];
 			newBenches[bench.id] = bench;
 		}
+
+		// Remove markers that are no longer shown
+		for (id in this.markers) {
+			marker = this.markers[id];
+			if (!newBenches[id]) {
+				marker.setMap(null);
+				delete this.markers[id];
+			}
+		}
+
 		// Create markers for ones that do not already exist
 		for (id in newBenches) {
 			if (!this.markers[id]) {
@@ -79,18 +107,9 @@ var Map = React.createClass({
 					title: bench.description
 				});
 				marker.setMap(this.map);
-				newMarkers[id] = marker;
+				this.markers[id] = marker;
 			}
 		}
-		// Remove markers that are no longer shown
-		for (id in this.markers) {
-			marker = this.markers[id];
-			if (!newBenches[id]) {
-				marker.setMap(null);
-				delete this.markers[id];
-			}
-		}
-		Object.assign(this.markers, newMarkers);
 	},
 
 	render: function () {

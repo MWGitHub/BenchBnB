@@ -1,13 +1,17 @@
 var ApiActions = require('../actions/api-actions');
+var FilterStore = require('../stores/filter');
 
 var ApiUtil = {
-	fetchBenches: function (bounds) {
+	fetchBenches: function () {
+		var filters = FilterStore.filters();
 		$.ajax({
 			type: 'GET',
 			url: '/api/benches',
 			dataType: 'json',
 			data: {
-				bounds: bounds
+				bounds: filters.bounds,
+				minSeating: filters.minSeating,
+				maxSeating: filters.maxSeating
 			},
 			success: function (data) {
 				ApiActions.receiveAll(data);

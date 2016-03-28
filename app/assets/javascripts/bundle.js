@@ -50,6 +50,7 @@
 	var Router = ReactRouter.Router;
 	var Route = ReactRouter.Route;
 	var IndexRoute = ReactRouter.IndexRoute;
+	var Link = ReactRouter.Link;
 	var Search = __webpack_require__(216);
 	var browserHistory = ReactRouter.browserHistory;
 	var BenchForm = __webpack_require__(247);
@@ -71,8 +72,8 @@
 							'h2',
 							null,
 							React.createElement(
-								'a',
-								{ href: '/' },
+								Link,
+								{ to: '/' },
 								'BenchBnB'
 							)
 						)
@@ -24773,6 +24774,9 @@
 	var React = __webpack_require__(1);
 	var Index = __webpack_require__(217);
 	var Map = __webpack_require__(243);
+	var FilterStore = __webpack_require__(248);
+	var FilterActions = __webpack_require__(250);
+	var ApiUtil = __webpack_require__(244);
 	
 	var Search = React.createClass({
 		displayName: 'Search',
@@ -24781,6 +24785,34 @@
 			router: function () {
 				return React.PropTypes.func.isRequired;
 			}
+		},
+	
+		getInitialState: function () {
+			return {
+				filters: FilterStore.filters()
+			};
+		},
+	
+		componentDidMount: function () {
+			this.filterToken = FilterStore.addListener(this._handleFilterChange);
+		},
+	
+		componentWillUnmount: function () {
+			this.filterToken.remove();
+		},
+	
+		_handleFilterChange: function () {
+			this.setState({
+				filters: FilterStore.filters()
+			});
+	
+			ApiUtil.fetchBenches();
+		},
+	
+		_handleMapIdle: function (bounds) {
+			FilterActions.receiveFilters({
+				bounds: bounds
+			});
 		},
 	
 		_handleMapClick: function (coords) {
@@ -24794,7 +24826,7 @@
 			return React.createElement(
 				'div',
 				null,
-				React.createElement(Map, { onClick: this._handleMapClick }),
+				React.createElement(Map, { onIdle: this._handleMapIdle, onClick: this._handleMapClick }),
 				React.createElement(Index, null)
 			);
 		}
@@ -31718,7 +31750,6 @@
 
 	var React = __webpack_require__(1);
 	var BenchStore = __webpack_require__(218);
-	var ApiUtil = __webpack_require__(244);
 	var UiStore = __webpack_require__(246);
 	
 	var Map = React.createClass({
@@ -31736,17 +31767,15 @@
 		},
 	
 		componentDidMount: function () {
-			this.benchChangeToken = BenchStore.addListener(this._onBenchChange);
-			this.uiChangeToken = UiStore.addListener(this._onUiChange);
+			this.benchChangeToken = BenchStore.addListener(this._handleBenchChange);
+			this.uiChangeToken = UiStore.addListener(this._handleUiChange);
 	
-			var mapDOMNode = this.refs.map;
-			var mapOptions = {
-				center: { lat: 40.725184, lng: -73.997226 },
-				zoom: 13
-			};
-			this.map = new google.maps.Map(mapDOMNode, mapOptions);
-			this.map.addListener('idle', this._onIdle);
-			this.map.addListener('click', this._onClick);
+			this._createMap();
+	
+			this.setState({
+				benches: BenchStore.all(),
+				focusedMarkerIndex: UiStore.getFocusedIndex()
+			});
 		},
 	
 		componentWillUnmount: function () {
@@ -31754,41 +31783,69 @@
 			this.uiChangeToken.remove();
 		},
 	
-		_onBenchChange: function () {
+		_handleBenchChange: function () {
 			this.setState({
 				benches: BenchStore.all()
 			});
 		},
 	
-		_onUiChange: function () {
+		_handleUiChange: function () {
 			this.setState({
 				focusedMarkerIndex: UiStore.getFocusedIndex()
 			});
 		},
 	
-		_onIdle: function () {
+		_handleIdle: function () {
 			var bounds = this.map.getBounds();
 			var northEast = bounds.getNorthEast();
 			var southWest = bounds.getSouthWest();
-			ApiUtil.fetchBenches({
-				northEast: { lat: northEast.lat, lng: northEast.lng },
-				southWest: { lat: southWest.lat, lng: southWest.lng }
+			if (northEast.lat() === southWest.lat() && northEast.lng() === southWest.lng()) {
+				return;
+			}
+			this.props.onIdle({
+				northEast: { lat: northEast.lat(), lng: northEast.lng() },
+				southWest: { lat: southWest.lat(), lng: southWest.lng() }
 			});
 		},
 	
-		_onClick: function (e) {
+		_handleClick: function (e) {
 			var latLng = e.latLng;
 			this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
 		},
 	
+		_createMap: function () {
+			if (this.map) return;
+	
+			var mapDOMNode = this.refs.map;
+			var mapOptions = {
+				center: { lat: 40.725184, lng: -73.997226 },
+				zoom: 13
+			};
+			this.map = new google.maps.Map(mapDOMNode, mapOptions);
+			this.map.addListener('idle', this._handleIdle);
+			this.map.addListener('click', this._handleClick);
+		},
+	
 		_updateMarkers: function () {
+			if (!this.map) return;
+	
 			var bench, id, marker;
 			var newBenches = {};
-			var newMarkers = {};
+	
 			for (var i = 0; i < this.state.benches.length; ++i) {
 				bench = this.state.benches[i];
 				newBenches[bench.id] = bench;
 			}
+	
+			// Remove markers that are no longer shown
+			for (id in this.markers) {
+				marker = this.markers[id];
+				if (!newBenches[id]) {
+					marker.setMap(null);
+					delete this.markers[id];
+				}
+			}
+	
 			// Create markers for ones that do not already exist
 			for (id in newBenches) {
 				if (!this.markers[id]) {
@@ -31799,18 +31856,9 @@
 						title: bench.description
 					});
 					marker.setMap(this.map);
-					newMarkers[id] = marker;
+					this.markers[id] = marker;
 				}
 			}
-			// Remove markers that are no longer shown
-			for (id in this.markers) {
-				marker = this.markers[id];
-				if (!newBenches[id]) {
-					marker.setMap(null);
-					delete this.markers[id];
-				}
-			}
-			Object.assign(this.markers, newMarkers);
 		},
 	
 		render: function () {
@@ -31836,15 +31884,19 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var ApiActions = __webpack_require__(245);
+	var FilterStore = __webpack_require__(248);
 	
 	var ApiUtil = {
-		fetchBenches: function (bounds) {
+		fetchBenches: function () {
+			var filters = FilterStore.filters();
 			$.ajax({
 				type: 'GET',
 				url: '/api/benches',
 				dataType: 'json',
 				data: {
-					bounds: bounds
+					bounds: filters.bounds,
+					minSeating: filters.minSeating,
+					maxSeating: filters.maxSeating
 				},
 				success: function (data) {
 					ApiActions.receiveAll(data);
@@ -32047,6 +32099,67 @@
 	});
 	
 	module.exports = BenchForm;
+
+/***/ },
+/* 248 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Store = __webpack_require__(219).Store;
+	var Dispatcher = __webpack_require__(237);
+	var FilterConstants = __webpack_require__(249);
+	
+	var _filters = {
+		bounds: null,
+		minSeating: 1,
+		maxSeating: 0
+	};
+	
+	function mergeFilters(filters) {
+		Object.assign(_filters, filters);
+	}
+	
+	var FilterStore = new Store(Dispatcher);
+	
+	FilterStore.filters = function () {
+		return _filters;
+	};
+	
+	FilterStore.__onDispatch = function (payload) {
+		switch (payload.actionType) {
+			case FilterConstants.RECEIVE_FILTERS:
+				mergeFilters(payload.filters);
+				FilterStore.__emitChange();
+				break;
+		}
+	};
+	
+	module.exports = FilterStore;
+
+/***/ },
+/* 249 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		RECEIVE_FILTERS: 'RECEIVE_FILTERS'
+	};
+
+/***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Dispatcher = __webpack_require__(237);
+	var FilterConstants = __webpack_require__(249);
+	
+	var FilterActions = {
+		receiveFilters: function (filters) {
+			Dispatcher.dispatch({
+				actionType: FilterConstants.RECEIVE_FILTERS,
+				filters: filters
+			});
+		}
+	};
+	
+	module.exports = FilterActions;
 
 /***/ }
 /******/ ]);
