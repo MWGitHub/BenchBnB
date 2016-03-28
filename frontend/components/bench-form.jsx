@@ -12,6 +12,13 @@ var BenchForm = React.createClass({
 		};
 	},
 
+	componentDidMount: function () {
+		this.setState({
+			lat: this.props.location.query.lat || "0",
+			lng: this.props.location.query.lng || "0"
+		});
+	},
+
 	_handleLatChange: function (e) {
 		this.setState({ lat: e.target.value });
 	},

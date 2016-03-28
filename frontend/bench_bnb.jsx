@@ -13,7 +13,7 @@ var App = React.createClass({
 		return (
 			<div>
 				<nav className="nav group">
-					<div className="logo"><h2><a href="#">BenchBnB</a></h2></div>
+					<div className="logo"><h2><a href="/">BenchBnB</a></h2></div>
 				</nav>
 				<div className="main">
 					{this.props.children}

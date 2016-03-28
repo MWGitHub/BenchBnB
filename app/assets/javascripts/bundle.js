@@ -72,7 +72,7 @@
 							null,
 							React.createElement(
 								'a',
-								{ href: '#' },
+								{ href: '/' },
 								'BenchBnB'
 							)
 						)
@@ -24777,11 +24777,24 @@
 	var Search = React.createClass({
 		displayName: 'Search',
 	
+		contextTypes: {
+			router: function () {
+				return React.PropTypes.func.isRequired;
+			}
+		},
+	
+		_handleMapClick: function (coords) {
+			this.context.router.push({
+				pathname: 'benches/new',
+				query: coords
+			});
+		},
+	
 		render: function () {
 			return React.createElement(
 				'div',
 				null,
-				React.createElement(Map, null),
+				React.createElement(Map, { onClick: this._handleMapClick }),
 				React.createElement(Index, null)
 			);
 		}
@@ -31733,6 +31746,7 @@
 			};
 			this.map = new google.maps.Map(mapDOMNode, mapOptions);
 			this.map.addListener('idle', this._onIdle);
+			this.map.addListener('click', this._onClick);
 		},
 	
 		componentWillUnmount: function () {
@@ -31760,6 +31774,11 @@
 				northEast: { lat: northEast.lat, lng: northEast.lng },
 				southWest: { lat: southWest.lat, lng: southWest.lng }
 			});
+		},
+	
+		_onClick: function (e) {
+			var latLng = e.latLng;
+			this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
 		},
 	
 		_updateMarkers: function () {
@@ -31920,6 +31939,13 @@
 				seating: 1,
 				description: ''
 			};
+		},
+	
+		componentDidMount: function () {
+			this.setState({
+				lat: this.props.location.query.lat || "0",
+				lng: this.props.location.query.lng || "0"
+			});
 		},
 	
 		_handleLatChange: function (e) {

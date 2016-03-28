@@ -26,6 +26,7 @@ var Map = React.createClass({
 		};
 		this.map = new google.maps.Map(mapDOMNode, mapOptions);
 		this.map.addListener('idle', this._onIdle);
+		this.map.addListener('click', this._onClick);
 	},
 
 	componentWillUnmount: function () {
@@ -53,6 +54,11 @@ var Map = React.createClass({
 			northEast: { lat: northEast.lat, lng: northEast.lng },
 			southWest: { lat: southWest.lat, lng: southWest.lng }
 		});
+	},
+
+	_onClick: function (e) {
+		var latLng = e.latLng;
+		this.props.onClick({ lat: latLng.lat(), lng: latLng.lng() });
 	},
 
 	_updateMarkers: function () {
