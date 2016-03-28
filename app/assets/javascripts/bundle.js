@@ -52,6 +52,7 @@
 	var IndexRoute = ReactRouter.IndexRoute;
 	var Search = __webpack_require__(216);
 	var browserHistory = ReactRouter.browserHistory;
+	var BenchForm = __webpack_require__(247);
 	
 	var App = React.createClass({
 		displayName: 'App',
@@ -92,7 +93,8 @@
 		React.createElement(
 			Route,
 			{ path: '/', component: App },
-			React.createElement(IndexRoute, { component: Search })
+			React.createElement(IndexRoute, { component: Search }),
+			React.createElement(Route, { path: 'benches/new', component: BenchForm })
 		)
 	);
 	
@@ -24868,6 +24870,15 @@
 		_benches = benches.slice();
 	}
 	
+	function receiveBench(bench) {
+		var index = _benches.indexOf(bench);
+		if (index >= 0) {
+			_benches[index] = bench;
+		} else {
+			_benches.push(bench);
+		}
+	}
+	
 	BenchStore.all = function () {
 		return _benches.slice();
 	};
@@ -24876,6 +24887,10 @@
 		switch (payload.actionType) {
 			case BenchConstants.BENCHES_RECEIVED:
 				resetBenches(payload.benches);
+				BenchStore.__emitChange();
+				break;
+			case BenchConstants.BENCH_RECEIVED:
+				receiveBench(payload.bench);
 				BenchStore.__emitChange();
 				break;
 		}
@@ -31650,7 +31665,8 @@
 /***/ function(module, exports) {
 
 	var BenchConstants = {
-		BENCHES_RECEIVED: "BENCHES_RECEIVED"
+		BENCHES_RECEIVED: "BENCHES_RECEIVED",
+		BENCH_RECEIVED: "BENCH_RECEIVED"
 	};
 	
 	module.exports = BenchConstants;
@@ -31815,6 +31831,20 @@
 					ApiActions.receiveAll(data);
 				}
 			});
+		},
+	
+		createBench: function (bench) {
+			$.ajax({
+				type: 'POST',
+				url: '/api/benches',
+				dataType: 'json',
+				data: {
+					bench: bench
+				},
+				success: function (data) {
+					ApiActions.receiveBench(data);
+				}
+			});
 		}
 	};
 	
@@ -31832,6 +31862,13 @@
 			Dispatcher.dispatch({
 				actionType: BenchConstants.BENCHES_RECEIVED,
 				benches: benches
+			});
+		},
+	
+		receiveBench: function (bench) {
+			Dispatcher.dispatch({
+				actionType: BenchConstants.BENCH_RECEIVED,
+				bench: bench
 			});
 		}
 	};
@@ -31864,6 +31901,126 @@
 	};
 	
 	module.exports = UiStore;
+
+/***/ },
+/* 247 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	var ReactDOM = __webpack_require__(158);
+	var ApiUtil = __webpack_require__(244);
+	
+	var BenchForm = React.createClass({
+		displayName: 'BenchForm',
+	
+		getInitialState: function () {
+			return {
+				lat: 0,
+				lng: 0,
+				seating: 1,
+				description: ''
+			};
+		},
+	
+		_handleLatChange: function (e) {
+			this.setState({ lat: e.target.value });
+		},
+	
+		_handleLngChange: function (e) {
+			this.setState({ lng: e.target.value });
+		},
+	
+		_handleSeatingChange: function (e) {
+			this.setState({ seating: e.target.value });
+		},
+	
+		_handleDescriptionChange: function (e) {
+			this.setState({ description: e.target.value });
+		},
+	
+		_handleSubmit: function (e) {
+			e.preventDefault();
+	
+			ApiUtil.createBench({
+				lat: this.state.lat,
+				lng: this.state.lng,
+				seating: this.state.seating,
+				description: this.state.description
+			});
+	
+			this.setState(this.getInitialState());
+		},
+	
+		render: function () {
+			return React.createElement(
+				'div',
+				null,
+				React.createElement(
+					'form',
+					{ onSubmit: this._handleSubmit },
+					React.createElement(
+						'div',
+						{ className: 'input-wrapper' },
+						React.createElement(
+							'label',
+							{ htmlFor: 'lat' },
+							'Latitude'
+						),
+						React.createElement('input', { id: 'lat',
+							type: 'text',
+							onChange: this._handleLatChange,
+							value: this.state.lat })
+					),
+					React.createElement(
+						'div',
+						{ className: 'input-wrapper' },
+						React.createElement(
+							'label',
+							{ htmlFor: 'lng' },
+							'Longitude'
+						),
+						React.createElement('input', { id: 'lng',
+							type: 'text',
+							onChange: this._handleLngChange,
+							value: this.state.lng })
+					),
+					React.createElement(
+						'div',
+						{ className: 'input-wrapper' },
+						React.createElement(
+							'label',
+							{ htmlFor: 'seating' },
+							'Seating'
+						),
+						React.createElement('input', { id: 'seating',
+							type: 'text',
+							onChange: this._handleSeatingChange,
+							value: this.state.seating })
+					),
+					React.createElement(
+						'div',
+						{ className: 'input-wrapper' },
+						React.createElement(
+							'label',
+							{ htmlFor: 'description' },
+							'Description'
+						),
+						React.createElement('textarea', { id: 'description', ref: 'description',
+							type: 'text',
+							onChange: this._handleDescriptionChange,
+							value: this.state.description })
+					),
+					React.createElement(
+						'div',
+						{ className: 'input-wrapper' },
+						React.createElement('input', { type: 'submit', value: 'Create Bench' })
+					)
+				)
+			);
+		}
+	});
+	
+	module.exports = BenchForm;
 
 /***/ }
 /******/ ]);

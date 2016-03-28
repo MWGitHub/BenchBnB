@@ -13,6 +13,20 @@ var ApiUtil = {
 				ApiActions.receiveAll(data);
 			}
 		});
+	},
+
+	createBench: function (bench) {
+		$.ajax({
+			type: 'POST',
+			url: '/api/benches',
+			dataType: 'json',
+			data: {
+				bench: bench
+			},
+			success: function (data) {
+				ApiActions.receiveBench(data);
+			}
+		});
 	}
 };
 

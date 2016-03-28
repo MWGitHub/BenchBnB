@@ -6,6 +6,7 @@ var Route = ReactRouter.Route;
 var IndexRoute = ReactRouter.IndexRoute;
 var Search = require('./components/search');
 var browserHistory = ReactRouter.browserHistory;
+var BenchForm = require('./components/bench-form');
 
 var App = React.createClass({
 	render: function () {
@@ -26,6 +27,7 @@ var routes = (
 	<Router history={browserHistory}>
 		<Route path='/' component={App}>
 			<IndexRoute component={Search} />
+			<Route path='benches/new' component={BenchForm} />
 		</Route>
 	</Router>
 );
