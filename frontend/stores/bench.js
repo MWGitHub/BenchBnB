@@ -30,6 +30,7 @@ function receiveBench(bench) {
 	for (var i = 0; i < _benches.length; ++i) {
 		if (_benches[i].id === bench.id) {
 			_benches[i] = bench;
+			return;
 		}
 	}
 	_benches.push(bench);
