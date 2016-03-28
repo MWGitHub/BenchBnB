@@ -1,8 +1,11 @@
 var React = require('react');
 var ReactDOM = require('react-dom');
-var Router = require('react-router').Router;
-var Route = require('react-router').Route;
+var ReactRouter = require('react-router');
+var Router = ReactRouter.Router;
+var Route = ReactRouter.Route;
+var IndexRoute = ReactRouter.IndexRoute;
 var Search = require('./components/search');
+var browserHistory = ReactRouter.browserHistory;
 
 var App = React.createClass({
 	render: function () {
@@ -12,13 +15,21 @@ var App = React.createClass({
 					<div className="logo"><h2><a href="#">BenchBnB</a></h2></div>
 				</nav>
 				<div className="main">
-					<Search />
+					{this.props.children}
 				</div>
 			</div>
 		);
 	}
 });
 
+var routes = (
+	<Router history={browserHistory}>
+		<Route path='/' component={App}>
+			<IndexRoute component={Search} />
+		</Route>
+	</Router>
+);
+
 $(function () {
-	ReactDOM.render(<App />, $('#content')[0]);
+	ReactDOM.render(routes, $('#content')[0]);
 });

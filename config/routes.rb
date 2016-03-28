@@ -4,4 +4,5 @@ Rails.application.routes.draw do
 	end
 
 	root to: 'static_pages#root'
+	get '*unmatched_route', to: 'static_pages#root'
 end
