@@ -24926,6 +24926,13 @@
 		render: function () {
 			var that = this;
 			var benches = this.state.benches.map(function (bench) {
+				var reviewSum = bench.reviews.reduce(function (acc, v) {
+					return acc + parseInt(v.score);
+				}, 0);
+				avg = 'N/A';
+				if (bench.reviews.length !== 0) {
+					avg = reviewSum / bench.reviews.length;
+				}
 				return React.createElement(
 					'div',
 					{ key: 'bench-' + bench.id,
@@ -24933,7 +24940,13 @@
 						onMouseLeave: that._onMouseLeave(bench.id).bind(that),
 						onClick: that._onClick(bench.id).bind(that)
 					},
-					bench.description
+					React.createElement(
+						'p',
+						null,
+						avg,
+						' - ',
+						bench.description
+					)
 				);
 			});
 			return React.createElement(

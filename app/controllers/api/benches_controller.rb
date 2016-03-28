@@ -1,6 +1,6 @@
 class Api::BenchesController < ApplicationController
 	def index
-		@benches = Bench.in_bounds(params[:bounds])
+		@benches = Bench.includes(:reviews).in_bounds(params[:bounds])
 		if params[:maxSeating].to_i != 0
 			@benches = @benches.where(
 				seating: (params[:minSeating].to_i..params[:maxSeating].to_i)
