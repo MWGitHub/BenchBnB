@@ -42,6 +42,20 @@ var ApiUtil = {
 				ApiActions.receiveBench(data);
 			}
 		});
+	},
+
+	createReview: function (review) {
+		$.ajax({
+			type: 'POST',
+			url: '/api/benches/' + review.bench_id + '/reviews',
+			dataType: 'json',
+			data: {
+				review: review
+			},
+			success: function (data) {
+				ApiActions.receiveBench(data);
+			}
+		});
 	}
 };
 

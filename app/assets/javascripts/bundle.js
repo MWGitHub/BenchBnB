@@ -55,6 +55,8 @@
 	var browserHistory = ReactRouter.browserHistory;
 	var BenchForm = __webpack_require__(247);
 	var BenchDetail = __webpack_require__(252);
+	var ReviewForm = __webpack_require__(253);
+	var ReviewList = __webpack_require__(254);
 	
 	var App = React.createClass({
 		displayName: 'App',
@@ -97,7 +99,12 @@
 			{ path: '/', component: App },
 			React.createElement(IndexRoute, { component: Search }),
 			React.createElement(Route, { path: 'benches/new', component: BenchForm }),
-			React.createElement(Route, { path: 'benches/:id', component: BenchDetail })
+			React.createElement(
+				Route,
+				{ path: 'benches/:id', component: BenchDetail },
+				React.createElement(Route, { path: 'reviews/new', component: ReviewForm }),
+				React.createElement(Route, { path: 'reviews', component: ReviewList })
+			)
 		)
 	);
 	
@@ -31980,6 +31987,20 @@
 					ApiActions.receiveBench(data);
 				}
 			});
+		},
+	
+		createReview: function (review) {
+			$.ajax({
+				type: 'POST',
+				url: '/api/benches/' + review.bench_id + '/reviews',
+				dataType: 'json',
+				data: {
+					review: review
+				},
+				success: function (data) {
+					ApiActions.receiveBench(data);
+				}
+			});
 		}
 	};
 	
@@ -32321,6 +32342,7 @@
 	var BenchStore = __webpack_require__(218);
 	var ApiUtil = __webpack_require__(244);
 	var Map = __webpack_require__(243);
+	var Link = __webpack_require__(159).Link;
 	
 	var BenchDetail = React.createClass({
 		displayName: 'BenchDetail',
@@ -32358,6 +32380,32 @@
 				return React.createElement('div', null);
 			}
 	
+			var newReviewLink = '';
+			if (!this.props.location.pathname.match('reviews/new/?$')) {
+				newReviewLink = React.createElement(
+					'p',
+					null,
+					React.createElement(
+						Link,
+						{ to: '/benches/' + this.state.bench.id + '/reviews/new' },
+						'Write Review'
+					)
+				);
+			}
+	
+			var reviewsLink = '';
+			if (!this.props.location.pathname.match('reviews/?$')) {
+				reviewsLink = React.createElement(
+					'p',
+					null,
+					React.createElement(
+						Link,
+						{ to: '/benches/' + this.state.bench.id + '/reviews' },
+						'Read Reviews'
+					)
+				);
+			}
+	
 			return React.createElement(
 				'div',
 				null,
@@ -32387,7 +32435,10 @@
 						null,
 						'Description: ',
 						this.state.bench.description
-					)
+					),
+					newReviewLink,
+					reviewsLink,
+					this.props.children
 				),
 				React.createElement(
 					'div',
@@ -32412,6 +32463,123 @@
 	});
 	
 	module.exports = BenchDetail;
+
+/***/ },
+/* 253 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	
+	var ReviewForm = React.createClass({
+		displayName: 'ReviewForm',
+	
+		getInitialState: function () {
+			return {
+				text: '',
+				score: ''
+			};
+		},
+	
+		_handleTextChange: function (e) {
+			this.setState({
+				text: e.target.value
+			});
+		},
+	
+		_handleScoreChange: function (e) {
+			this.setState({
+				score: e.target.value
+			});
+		},
+	
+		_handleSubmit: function (e) {
+			e.preventDefault();
+	
+			e.target.reset();
+		},
+	
+		render: function () {
+			return React.createElement(
+				'div',
+				null,
+				React.createElement(
+					'form',
+					{ onSubmit: this._handleSubmit },
+					React.createElement(
+						'div',
+						null,
+						React.createElement(
+							'label',
+							null,
+							'Review',
+							React.createElement('textarea', {
+								value: this.state.text,
+								onChange: this._handleTextChange })
+						)
+					),
+					React.createElement(
+						'div',
+						null,
+						React.createElement(
+							'label',
+							null,
+							'Score',
+							React.createElement(
+								'select',
+								{
+									value: this.state.score,
+									onChange: this._handleScoreChange },
+								React.createElement(
+									'option',
+									{ value: '1' },
+									'1'
+								),
+								React.createElement(
+									'option',
+									{ value: '2' },
+									'2'
+								),
+								React.createElement(
+									'option',
+									{ value: '3' },
+									'3'
+								),
+								React.createElement(
+									'option',
+									{ value: '4' },
+									'4'
+								),
+								React.createElement(
+									'option',
+									{ value: '5' },
+									'5'
+								)
+							)
+						)
+					),
+					React.createElement('input', { type: 'submit', value: 'Save Review' })
+				)
+			);
+		}
+	});
+	
+	module.exports = ReviewForm;
+
+/***/ },
+/* 254 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var React = __webpack_require__(1);
+	
+	var ReviewList = React.createClass({
+		displayName: 'ReviewList',
+	
+		render: function () {
+			return React.createElement('div', null);
+		}
+	});
+	
+	module.exports = ReviewList;
 
 /***/ }
 /******/ ]);
