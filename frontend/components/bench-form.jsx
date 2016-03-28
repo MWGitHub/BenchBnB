@@ -14,7 +14,8 @@ var BenchForm = React.createClass({
 			lat: 0,
 			lng: 0,
 			seating: 1,
-			description: ''
+			description: '',
+			photoURL: ''
 		};
 	},
 
@@ -41,6 +42,23 @@ var BenchForm = React.createClass({
 		this.setState({ description: e.target.value });
 	},
 
+	_handleImageUpload: function (e) {
+		var that = this;
+		cloudinary.openUploadWidget(
+			{
+				upload_preset: 'pn7dzl1g'
+			},
+  		function(error, result) {
+				console.log(error, result);
+				if (result) {
+					that.setState({
+						photoURL: result[0].url
+					});
+				}
+			}
+		);
+	},
+
 	_handleSubmit: function (e) {
 		e.preventDefault();
 
@@ -48,7 +66,8 @@ var BenchForm = React.createClass({
 			lat: this.state.lat,
 			lng: this.state.lng,
 			seating: this.state.seating,
-			description: this.state.description
+			description: this.state.description,
+			photo_url: this.state.photoURL
 		});
 
 		this.setState(this.getInitialState());
@@ -93,6 +112,12 @@ var BenchForm = React.createClass({
 							onChange={this._handleDescriptionChange}
 							value={this.state.description}>
 						</textarea>
+					</div>
+
+					<div className="input-wrapper">
+						<button type="button" onClick={this._handleImageUpload}>
+							Upload Images
+						</button>
 					</div>
 
 					<div className="input-wrapper">

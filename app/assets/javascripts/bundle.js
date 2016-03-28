@@ -109,6 +109,8 @@
 	);
 	
 	$(function () {
+		cloudinary.setCloudName('dbe1fg2ao');
+	
 		ReactDOM.render(routes, $('#content')[0]);
 	});
 
@@ -24932,6 +24934,11 @@
 				avg = 'N/A';
 				if (bench.reviews.length !== 0) {
 					avg = reviewSum / bench.reviews.length;
+					avg = Math.floor(avg * 100) / 100;
+				}
+				var img = '';
+				if (bench.photo_url) {
+					img = React.createElement('img', { src: bench.photo_url });
 				}
 				return React.createElement(
 					'div',
@@ -24940,6 +24947,11 @@
 						onMouseLeave: that._onMouseLeave(bench.id).bind(that),
 						onClick: that._onClick(bench.id).bind(that)
 					},
+					React.createElement(
+						'p',
+						{ className: 'thumb' },
+						img
+					),
 					React.createElement(
 						'p',
 						null,
@@ -32112,7 +32124,8 @@
 				lat: 0,
 				lng: 0,
 				seating: 1,
-				description: ''
+				description: '',
+				photoURL: ''
 			};
 		},
 	
@@ -32139,6 +32152,20 @@
 			this.setState({ description: e.target.value });
 		},
 	
+		_handleImageUpload: function (e) {
+			var that = this;
+			cloudinary.openUploadWidget({
+				upload_preset: 'pn7dzl1g'
+			}, function (error, result) {
+				console.log(error, result);
+				if (result) {
+					that.setState({
+						photoURL: result[0].url
+					});
+				}
+			});
+		},
+	
 		_handleSubmit: function (e) {
 			e.preventDefault();
 	
@@ -32146,7 +32173,8 @@
 				lat: this.state.lat,
 				lng: this.state.lng,
 				seating: this.state.seating,
-				description: this.state.description
+				description: this.state.description,
+				photo_url: this.state.photoURL
 			});
 	
 			this.setState(this.getInitialState());
@@ -32214,6 +32242,15 @@
 							type: 'text',
 							onChange: this._handleDescriptionChange,
 							value: this.state.description })
+					),
+					React.createElement(
+						'div',
+						{ className: 'input-wrapper' },
+						React.createElement(
+							'button',
+							{ type: 'button', onClick: this._handleImageUpload },
+							'Upload Images'
+						)
 					),
 					React.createElement(
 						'div',
@@ -32448,12 +32485,21 @@
 				);
 			}
 	
+			var img = '';
+			if (this.state.bench.photo_url) {
+				img = React.createElement('img', { src: this.state.bench.photo_url });
+			}
 			return React.createElement(
 				'div',
 				null,
 				React.createElement(
 					'div',
 					{ className: 'left' },
+					React.createElement(
+						'p',
+						null,
+						img
+					),
 					React.createElement(
 						'p',
 						null,

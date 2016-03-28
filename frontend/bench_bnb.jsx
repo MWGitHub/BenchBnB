@@ -41,5 +41,7 @@ var routes = (
 );
 
 $(function () {
+  cloudinary.setCloudName('dbe1fg2ao');
+
 	ReactDOM.render(routes, $('#content')[0]);
 });

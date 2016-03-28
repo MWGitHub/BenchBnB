@@ -60,9 +60,14 @@ var BenchDetail = React.createClass({
 			);
 		}
 
+		var img = '';
+		if (this.state.bench.photo_url) {
+			img = <img src={this.state.bench.photo_url} />;
+		}
 		return (
 			<div>
 				<div className="left">
+					<p>{img}</p>
 					<p>Latitude: {this.state.bench.lat}</p>
 					<p>Longitude: {this.state.bench.lng}</p>
 					<p>Seating: {this.state.bench.seating}</p>

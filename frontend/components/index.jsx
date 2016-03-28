@@ -50,6 +50,11 @@ var Index = React.createClass({
 			avg = 'N/A';
 			if (bench.reviews.length !== 0) {
 				avg = reviewSum / bench.reviews.length;
+				avg = Math.floor(avg * 100) / 100;
+			}
+			var img = '';
+			if (bench.photo_url) {
+				img = <img src={bench.photo_url} />;
 			}
 			return (
 				<div key={'bench-' + bench.id}
@@ -57,6 +62,7 @@ var Index = React.createClass({
 					onMouseLeave={that._onMouseLeave(bench.id).bind(that)}
 					onClick={that._onClick(bench.id).bind(that)}
 				>
+					<p className="thumb">{img}</p>
 					<p>{avg} - {bench.description}</p>
 				</div>
 			);
