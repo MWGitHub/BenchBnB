@@ -3,6 +3,8 @@ class Bench < ActiveRecord::Base
 	validates :seating, numericality: { only_integer: true }
 	validates :lat, :lng, numericality: true
 
+	has_many :reviews
+
 	def self.in_bounds(bounds)
 		northEast = bounds[:northEast]
 		southWest = bounds[:southWest]

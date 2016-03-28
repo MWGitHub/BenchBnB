@@ -3,6 +3,12 @@ var ReactDOM = require('react-dom');
 var ApiUtil = require('../util/api-util');
 
 var BenchForm = React.createClass({
+	contextTypes: {
+		router: function() {
+			return React.PropTypes.func.isRequired;
+		}
+	},
+
 	getInitialState: function () {
 		return {
 			lat: 0,
@@ -46,6 +52,10 @@ var BenchForm = React.createClass({
 		});
 
 		this.setState(this.getInitialState());
+
+		this.context.router.push({
+			pathname: '/'
+		});
 	},
 
 	render: function () {

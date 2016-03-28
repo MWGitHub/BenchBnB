@@ -1,16 +1,23 @@
 var React = require('react');
+var ApiUtil = require('../util/api-util');
 
 var ReviewForm = React.createClass({
+	contextTypes: {
+		router: function() {
+			return React.PropTypes.func.isRequired;
+		}
+	},
+
 	getInitialState: function () {
 		return {
-			text: '',
+			body: '',
 			score: ''
 		};
 	},
 
 	_handleTextChange: function (e) {
 		this.setState({
-			text: e.target.value
+			body: e.target.value
 		});
 	},
 
@@ -22,8 +29,22 @@ var ReviewForm = React.createClass({
 
 	_handleSubmit: function (e) {
 		e.preventDefault();
-		
+
+		var benchId = this.props.params.id;
+		var that = this;
+		ApiUtil.createReview(benchId, {
+			body: this.state.body,
+			score: this.state.score
+		}, function (data) {
+			that.context.router.push({
+				pathname: '/benches/' + benchId + '/reviews'
+			});
+		});
+
 		e.target.reset();
+
+		this.setState(this.getInitialState());
+
 	},
 
 	render: function () {
@@ -33,7 +54,7 @@ var ReviewForm = React.createClass({
 					<div>
 						<label>Review
 							<textarea
-								value={this.state.text}
+								value={this.state.body}
 								onChange={this._handleTextChange}>
 							</textarea>
 						</label>
@@ -43,6 +64,7 @@ var ReviewForm = React.createClass({
 							<select
 								value={this.state.score}
 								onChange={this._handleScoreChange}>
+								<option value=""></option>
 								<option value="1">1</option>
 								<option value="2">2</option>
 								<option value="3">3</option>

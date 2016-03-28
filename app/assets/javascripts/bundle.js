@@ -24928,7 +24928,7 @@
 			var benches = this.state.benches.map(function (bench) {
 				return React.createElement(
 					'div',
-					{ key: bench.id,
+					{ key: 'bench-' + bench.id,
 						onMouseEnter: that._onMouseEnter(bench.id).bind(that),
 						onMouseLeave: that._onMouseLeave(bench.id).bind(that),
 						onClick: that._onClick(bench.id).bind(that)
@@ -24959,16 +24959,31 @@
 	var BenchStore = new Store(Dispatcher);
 	
 	function resetBenches(benches) {
+		var original = {};
+		var i;
+	
+		for (i = 0; i < _benches.length; ++i) {
+			original[_benches[i].id] = _benches[i];
+		}
+	
 		_benches = benches.slice();
+	
+		// Give benches the reviews back if they have any
+		for (i = 0; i < _benches.length; ++i) {
+			var bench = _benches[i];
+			if (original[bench.id]) {
+				bench.reviews = bench.reviews || original.reviews;
+			}
+		}
 	}
 	
 	function receiveBench(bench) {
-		var index = _benches.indexOf(bench);
-		if (index >= 0) {
-			_benches[index] = bench;
-		} else {
-			_benches.push(bench);
+		for (var i = 0; i < _benches.length; ++i) {
+			if (_benches[i].id === bench.id) {
+				_benches[i] = bench;
+			}
 		}
+		_benches.push(bench);
 	}
 	
 	BenchStore.all = function () {
@@ -31989,16 +32004,19 @@
 			});
 		},
 	
-		createReview: function (review) {
+		createReview: function (benchId, review, onSuccess) {
 			$.ajax({
 				type: 'POST',
-				url: '/api/benches/' + review.bench_id + '/reviews',
+				url: '/api/benches/' + benchId + '/reviews',
 				dataType: 'json',
 				data: {
 					review: review
 				},
 				success: function (data) {
 					ApiActions.receiveBench(data);
+					if (onSuccess) {
+						onSuccess(data);
+					}
 				}
 			});
 		}
@@ -32069,6 +32087,12 @@
 	var BenchForm = React.createClass({
 		displayName: 'BenchForm',
 	
+		contextTypes: {
+			router: function () {
+				return React.PropTypes.func.isRequired;
+			}
+		},
+	
 		getInitialState: function () {
 			return {
 				lat: 0,
@@ -32112,6 +32136,10 @@
 			});
 	
 			this.setState(this.getInitialState());
+	
+			this.context.router.push({
+				pathname: '/'
+			});
 		},
 	
 		render: function () {
@@ -32469,20 +32497,27 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
+	var ApiUtil = __webpack_require__(244);
 	
 	var ReviewForm = React.createClass({
 		displayName: 'ReviewForm',
 	
+		contextTypes: {
+			router: function () {
+				return React.PropTypes.func.isRequired;
+			}
+		},
+	
 		getInitialState: function () {
 			return {
-				text: '',
+				body: '',
 				score: ''
 			};
 		},
 	
 		_handleTextChange: function (e) {
 			this.setState({
-				text: e.target.value
+				body: e.target.value
 			});
 		},
 	
@@ -32495,7 +32530,20 @@
 		_handleSubmit: function (e) {
 			e.preventDefault();
 	
+			var benchId = this.props.params.id;
+			var that = this;
+			ApiUtil.createReview(benchId, {
+				body: this.state.body,
+				score: this.state.score
+			}, function (data) {
+				that.context.router.push({
+					pathname: '/benches/' + benchId + '/reviews'
+				});
+			});
+	
 			e.target.reset();
+	
+			this.setState(this.getInitialState());
 		},
 	
 		render: function () {
@@ -32513,7 +32561,7 @@
 							null,
 							'Review',
 							React.createElement('textarea', {
-								value: this.state.text,
+								value: this.state.body,
 								onChange: this._handleTextChange })
 						)
 					),
@@ -32529,6 +32577,7 @@
 								{
 									value: this.state.score,
 									onChange: this._handleScoreChange },
+								React.createElement('option', { value: '' }),
 								React.createElement(
 									'option',
 									{ value: '1' },
@@ -32570,12 +32619,65 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var React = __webpack_require__(1);
+	var BenchStore = __webpack_require__(218);
 	
 	var ReviewList = React.createClass({
 		displayName: 'ReviewList',
 	
+		getInitialState: function () {
+			return this._getReviewsState(this.props.params.id);
+		},
+	
+		_getReviewsState: function (id) {
+			var bench = BenchStore.find(parseInt(id));
+			var reviews = [];
+			if (bench) {
+				reviews = bench.reviews;
+			}
+			return {
+				reviews: reviews
+			};
+		},
+	
+		componentDidMount: function () {
+			this.benchToken = BenchStore.addListener(this._onBenchChange);
+		},
+	
+		componentWillUnmount: function () {
+			this.benchToken.remove();
+		},
+	
+		_onBenchChange: function () {
+			this.setState(this._getReviewsState(this.props.params.id));
+		},
+	
+		componentWillReceiveProps: function (newProps) {
+			this.setState(this._getReviewsState(newProps.params.id));
+		},
+	
 		render: function () {
-			return React.createElement('div', null);
+			var reviews = this.state.reviews.map(function (review) {
+				return React.createElement(
+					'div',
+					{ key: review.id },
+					React.createElement(
+						'p',
+						null,
+						review.score
+					),
+					React.createElement(
+						'p',
+						null,
+						review.body
+					)
+				);
+			});
+	
+			return React.createElement(
+				'div',
+				null,
+				reviews
+			);
 		}
 	});
 	

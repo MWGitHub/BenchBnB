@@ -44,16 +44,19 @@ var ApiUtil = {
 		});
 	},
 
-	createReview: function (review) {
+	createReview: function (benchId, review, onSuccess) {
 		$.ajax({
 			type: 'POST',
-			url: '/api/benches/' + review.bench_id + '/reviews',
+			url: '/api/benches/' + benchId + '/reviews',
 			dataType: 'json',
 			data: {
 				review: review
 			},
 			success: function (data) {
 				ApiActions.receiveBench(data);
+				if (onSuccess) {
+					onSuccess(data);
+				}
 			}
 		});
 	}
